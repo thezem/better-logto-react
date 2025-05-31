@@ -1,5 +1,5 @@
 {
-  "name": "@better-logto/react",
+  "name": "@ouim/better-logto-react",
   "version": "0.1.2",
   "description": "A lightweight wrapper around @logto/react that provides Clerk-like API patterns",
   "type": "module",
