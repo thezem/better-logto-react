@@ -83,7 +83,19 @@ const InternalAuthProvider = ({
 
   const signIn = useCallback(
     async (overrideCallbackUrl?: string, usePopup?: boolean) => {
+      // Check if we're already in a popup to prevent infinite loops
+      const isInPopup = window.opener && window.opener !== window
+
+      if (isInPopup) {
+        // If we're already in a popup, just do direct sign-in without opening another popup
+        const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
+        await logtoSignIn(redirectUrl)
+        return
+      }
+
       const shouldUsePopup = usePopup ?? enablePopupSignIn
+      console.log(`SignIn called with usePopup=${shouldUsePopup}, enablePopupSignIn=${enablePopupSignIn}`)
+
       if (!shouldUsePopup) {
         const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
         await logtoSignIn(redirectUrl)
@@ -112,6 +124,7 @@ const InternalAuthProvider = ({
           if (event.origin !== window.location.origin) return
 
           if (event.data.type === 'SIGNIN_SUCCESS' || event.data.type === 'SIGNIN_COMPLETE') {
+            loadUser()
             window.dispatchEvent(new CustomEvent('auth-state-changed'))
             popup?.close()
             clearInterval(checkClosed)
@@ -127,9 +140,6 @@ const InternalAuthProvider = ({
         }
 
         setTimeout(cleanupListener, 300000) // 5 minutes timeout
-        // Use regular redirect sign-in
-        const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
-        await logtoSignIn(redirectUrl)
       }
     },
     [enablePopupSignIn, callbackUrl, logtoSignIn],

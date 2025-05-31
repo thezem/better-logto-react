@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAuth } from './useAuth'
 import LoadingSpinner from './components/ui/loading-spinner'
 
 export function SignInPage() {
   const { user, signIn, isLoadingUser } = useAuth()
   const [isPopup, setIsPopup] = useState(false)
+  const signInCalled = useRef(false)
+  console.log(isLoadingUser)
 
   useEffect(() => {
     // Method 1: Check if window has an opener (opened by another window)
@@ -16,23 +18,12 @@ export function SignInPage() {
   }, [])
 
   useEffect(() => {
-    if (user) {
-      if (isPopup) {
-        // Send message to parent window before closing
-        if (window.opener && window.opener !== window) {
-          window.opener.postMessage({ type: 'SIGNIN_SUCCESS', user }, window.location.origin)
-        }
-        // Small delay to ensure message is sent before closing
-        setTimeout(() => {
-          window.close()
-        }, 100)
-      } else {
-        // If not a popup, redirect to the home page or a specific URL
-        window.location.href = '/'
-      }
-    } else if (!isLoadingUser) {
-      // If user is not authenticated, trigger sign-in
-      signIn()
+    if (isLoadingUser) return
+
+    if (!signInCalled.current) {
+      signInCalled.current = true
+      // Pass false for usePopup parameter to prevent nested popups when already in a popup
+      signIn(undefined, false)
     }
   }, [isPopup, user, isLoadingUser, signIn])
 

@@ -47,7 +47,14 @@ export const CallbackPage: React.FC<CallbackPageProps> = ({ className = '', load
         if (!isPopup) {
           window.location.href = '/'
         } else {
-          window.close()
+          // Send message to parent window before closing
+          if (window.opener && window.opener !== window) {
+            window.opener.postMessage({ type: 'SIGNIN_SUCCESS' }, window.location.origin)
+          }
+          // Small delay to ensure message is sent before closing
+          setTimeout(() => {
+            window.close()
+          }, 100)
         }
       }
     } catch (error) {

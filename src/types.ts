@@ -26,7 +26,7 @@ export interface AuthOptions {
 export interface AuthContextType {
   user: LogtoUser | null
   isLoadingUser: boolean
-  signIn: (callbackUrl?: string) => Promise<void>
+  signIn: (callbackUrl?: string, usePopup?: boolean) => Promise<void>
   signOut: (options?: { callbackUrl?: string; global?: boolean }) => Promise<void>
   refreshAuth: () => Promise<void>
   enablePopupSignIn?: boolean
