@@ -14,9 +14,14 @@ import {
 
 export interface UserCenterProps {
   className?: string
+  globalSignOut?: boolean
 }
 
-export const UserCenter: React.FC<UserCenterProps> = ({ className = '' }) => {
+export const UserCenter: React.FC<UserCenterProps> = ({
+  className = '',
+  globalSignOut = true,
+  signoutCallbackUrl = window.location.href,
+}) => {
   const { user, isLoadingUser, signIn, signOut } = useAuth()
 
   if (isLoadingUser) {
@@ -48,7 +53,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({ className = '' }) => {
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-100" />
           <DropdownMenuItem
-            onClick={() => signOut()}
+            onClick={() => signOut({ callbackUrl: signoutCallbackUrl, global: globalSignOut })}
             className="px-3 py-2 text-sm cursor-pointer text-slate-700 hover:text-slate-900 focus:text-slate-900"
           >
             <LogOut className="mr-2.5 h-4 w-4" />

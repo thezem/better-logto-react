@@ -21,7 +21,7 @@ export interface AuthContextType {
   user: LogtoUser | null
   isLoadingUser: boolean
   signIn: (callbackUrl?: string) => Promise<void>
-  signOut: (callbackUrl?: string) => Promise<void>
+  signOut: (options?: { callbackUrl?: string; global?: boolean }) => Promise<void>
 }
 
 export interface AuthProviderProps {

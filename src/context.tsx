@@ -41,8 +41,25 @@ const InternalAuthProvider = ({ children, callbackUrl }: { children: React.React
     await logtoSignIn(redirectUrl)
   }
 
-  const signOut = async (callbackUrl?: string) => {
-    await logtoSignOut(callbackUrl)
+  const signOut = async (options?: { callbackUrl?: string; global?: boolean }) => {
+    const { callbackUrl, global = true } = options || {}
+
+    if (global) {
+      // Global sign out - logs out from entire Logto ecosystem
+      await logtoSignOut(callbackUrl)
+    } else {
+      // Local sign out - only clears local session
+      setUser(null)
+      setIsLoadingUser(false)
+
+      // Optional: Clear any local storage or session storage if needed
+      // localStorage.removeItem('logto_session')
+      // sessionStorage.clear()
+
+      if (callbackUrl) {
+        window.location.href = callbackUrl
+      }
+    }
   }
 
   const value: AuthContextType = {
