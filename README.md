@@ -11,6 +11,8 @@ A lightweight wrapper around @logto/react that provides Clerk-like API patterns 
 
 ## Installation
 
+    './node_modules/@ouim/better-logto-react/**/*.{js,ts,jsx,tsx}', // Add this
+
 ```bash
 npm install @logto/react @ouim/better-logto-react
 ```

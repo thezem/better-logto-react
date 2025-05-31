@@ -38,7 +38,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger className="outline-none">
-          <Avatar className={`h-9 w-9 transition-all hover:ring-2 hover:ring-slate-200 ${className}`}>
+          <Avatar className={`h-9 w-9 transition-all hover:ring-2 hover:ring-red-2 ${className}`}>
             {user.avatar ? (
               <AvatarImage src={user.avatar} alt={user.name || 'User'} className="object-cover" />
             ) : (
