@@ -17,7 +17,7 @@ A simpler way to use [@logto/react](https://github.com/logto-io/logto) with preb
 ## Installation
 
 ```sh
-npm install @ouim/simple-logto @logto/react
+npm install @ouim/simple-logto
 ```
 
 ---
