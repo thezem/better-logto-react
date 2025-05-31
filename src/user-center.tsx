@@ -24,7 +24,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
   globalSignOut = true,
   signoutCallbackUrl = window.location.href,
 }) => {
-  const { user, isLoadingUser, signIn, signOut } = useAuth()
+  const { user, isLoadingUser, signOut, signIn } = useAuth()
 
   if (isLoadingUser) {
     return (

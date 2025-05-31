@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { LogtoProvider, useLogto } from '@logto/react'
 import { transformUser, setCustomNavigate } from './utils'
 import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
@@ -7,38 +7,129 @@ import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 // Internal provider that wraps Logto's context
-const InternalAuthProvider = ({ children, callbackUrl }: { children: React.ReactNode; callbackUrl?: string }) => {
+const InternalAuthProvider = ({
+  children,
+  callbackUrl,
+  enablePopupSignIn,
+}: {
+  children: React.ReactNode
+  callbackUrl?: string
+  enablePopupSignIn?: boolean
+}) => {
   const { isAuthenticated, isLoading, getIdTokenClaims, signIn: logtoSignIn, signOut: logtoSignOut } = useLogto()
   const [user, setUser] = useState<LogtoUser | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true)
 
-  useEffect(() => {
-    const loadUser = async () => {
-      if (isLoading) return
+  const loadUser = useCallback(async () => {
+    if (isLoading) return
 
-      setIsLoadingUser(true)
+    setIsLoadingUser(true)
 
-      if (isAuthenticated) {
-        try {
-          const claims = await getIdTokenClaims()
-          setUser(transformUser(claims))
-        } catch (error) {
-          console.error('Error fetching user claims:', error)
-          setUser(null)
-        }
-      } else {
+    if (isAuthenticated) {
+      try {
+        const claims = await getIdTokenClaims()
+        setUser(transformUser(claims))
+      } catch (error) {
+        console.error('Error fetching user claims:', error)
         setUser(null)
       }
-
-      setIsLoadingUser(false)
+    } else {
+      setUser(null)
     }
 
-    loadUser()
-  }, [isAuthenticated, isLoading, getIdTokenClaims])
+    setIsLoadingUser(false)
+  }, [isLoading, isAuthenticated, getIdTokenClaims])
 
-  const signIn = async (overrideCallbackUrl?: string) => {
-    const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
-    await logtoSignIn(redirectUrl)
+  useEffect(() => {
+    loadUser()
+  }, [loadUser])
+
+  // Add effect to handle cross-window/tab authentication state changes
+  useEffect(() => {
+    // Listen for storage changes (when auth state changes in other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      // Logto typically stores auth state in localStorage
+      if (e.key && (e.key.includes('logto') || e.key.includes('auth'))) {
+        // Refresh auth state when storage changes
+        setTimeout(() => {
+          loadUser()
+        }, 100) // Small delay to ensure storage is updated
+      }
+    }
+
+    // Listen for window focus to refresh auth state
+    const handleWindowFocus = () => {
+      // Refresh auth state when window regains focus
+      loadUser()
+    }
+
+    // Listen for custom auth change events
+    const handleAuthChange = () => {
+      loadUser()
+    }
+
+    // Add event listeners
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('focus', handleWindowFocus)
+    window.addEventListener('auth-state-changed', handleAuthChange)
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('focus', handleWindowFocus)
+      window.removeEventListener('auth-state-changed', handleAuthChange)
+    }
+  }, [loadUser])
+
+  const signIn = async (overrideCallbackUrl?: string, usePopup?: boolean) => {
+    const shouldUsePopup = usePopup ?? enablePopupSignIn
+    if (!shouldUsePopup) {
+      const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
+      await logtoSignIn(redirectUrl)
+    } else {
+      // Use popup sign-in
+      const popupWidth = 400
+      const popupHeight = 600
+      const left = window.innerWidth / 2 - popupWidth / 2
+      const top = window.innerHeight / 2 - popupHeight / 2
+      const popupFeatures = `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+
+      // Use the signin page route - assume user has it at /signin
+      const popup = window.open('/signin', 'SignInPopup', popupFeatures)
+
+      // Listen for the popup to close or complete authentication
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed)
+          // Dispatch event to refresh auth state when popup closes
+          window.dispatchEvent(new CustomEvent('auth-state-changed'))
+        }
+      }, 1000)
+
+      // Listen for messages from the popup
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return
+
+        if (event.data.type === 'SIGNIN_SUCCESS' || event.data.type === 'SIGNIN_COMPLETE') {
+          window.dispatchEvent(new CustomEvent('auth-state-changed'))
+          popup?.close()
+          clearInterval(checkClosed)
+        }
+      }
+
+      window.addEventListener('message', handleMessage)
+
+      // Cleanup listener when popup closes
+      const cleanupListener = () => {
+        window.removeEventListener('message', handleMessage)
+        clearInterval(checkClosed)
+      }
+
+      setTimeout(cleanupListener, 300000) // 5 minutes timeout
+      // Use regular redirect sign-in
+      const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
+      await logtoSignIn(redirectUrl)
+    }
   }
 
   const signOut = async (options?: { callbackUrl?: string; global?: boolean }) => {
@@ -60,6 +151,9 @@ const InternalAuthProvider = ({ children, callbackUrl }: { children: React.React
         window.location.href = callbackUrl
       }
     }
+
+    // Dispatch custom event to notify other windows/tabs
+    window.dispatchEvent(new CustomEvent('auth-state-changed'))
   }
 
   const value: AuthContextType = {
@@ -67,13 +161,15 @@ const InternalAuthProvider = ({ children, callbackUrl }: { children: React.React
     isLoadingUser,
     signIn,
     signOut,
+    refreshAuth: loadUser,
+    enablePopupSignIn,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // External provider that wraps Logto's provider
-export const AuthProvider = ({ children, config, callbackUrl, customNavigate }: AuthProviderProps) => {
+export const AuthProvider = ({ children, config, callbackUrl, customNavigate, enablePopupSignIn = false }: AuthProviderProps) => {
   // Set the custom navigate function for the entire library
   useEffect(() => {
     setCustomNavigate(customNavigate || null)
@@ -84,7 +180,9 @@ export const AuthProvider = ({ children, config, callbackUrl, customNavigate }: 
 
   return (
     <LogtoProvider config={config}>
-      <InternalAuthProvider callbackUrl={callbackUrl}>{children}</InternalAuthProvider>
+      <InternalAuthProvider callbackUrl={callbackUrl} enablePopupSignIn={enablePopupSignIn}>
+        {children}
+      </InternalAuthProvider>
     </LogtoProvider>
   )
 }

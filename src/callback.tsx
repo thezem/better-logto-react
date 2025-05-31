@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { useHandleSignInCallback } from '@logto/react'
 
 export interface CallbackPageProps {
@@ -18,7 +18,9 @@ const spinKeyframes = `
 `
 
 export const CallbackPage: React.FC<CallbackPageProps> = ({ className = '', loadingComponent, successComponent, onSuccess, onError }) => {
-  React.useEffect(() => {
+  const [isPopup, setIsPopup] = useState(false)
+
+  useEffect(() => {
     if (!document.querySelector('#spin-keyframes')) {
       const style = document.createElement('style')
       style.id = 'spin-keyframes'
@@ -27,12 +29,26 @@ export const CallbackPage: React.FC<CallbackPageProps> = ({ className = '', load
     }
   }, [])
 
+  useEffect(() => {
+    // Method 1: Check if window has an opener (opened by another window)
+    const hasOpener = window.opener && window.opener !== window
+
+    const isOpenedByScript = window.opener !== null && window.opener !== undefined
+
+    setIsPopup(hasOpener || isOpenedByScript)
+  }, [])
+
   const { isLoading } = useHandleSignInCallback(() => {
     try {
       if (onSuccess) {
         onSuccess()
       } else {
-        window.location.href = '/'
+        // If not a popup, redirect to the home page or a specific URL
+        if (!isPopup) {
+          window.location.href = '/'
+        } else {
+          window.close()
+        }
       }
     } catch (error) {
       console.error('Authentication callback error:', error)

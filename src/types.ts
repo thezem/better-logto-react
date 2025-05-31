@@ -28,6 +28,8 @@ export interface AuthContextType {
   isLoadingUser: boolean
   signIn: (callbackUrl?: string) => Promise<void>
   signOut: (options?: { callbackUrl?: string; global?: boolean }) => Promise<void>
+  refreshAuth: () => Promise<void>
+  enablePopupSignIn?: boolean
 }
 
 export interface AuthProviderProps {
@@ -35,6 +37,7 @@ export interface AuthProviderProps {
   config: LogtoConfig
   callbackUrl?: string
   customNavigate?: (url: string, options?: NavigationOptions) => void
+  enablePopupSignIn?: boolean
 }
 
 export interface CallbackPageProps {
