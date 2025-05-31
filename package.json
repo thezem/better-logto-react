@@ -1,7 +1,7 @@
 {
-  "name": "@ouim/better-logto-react",
-  "version": "0.1.2",
-  "description": "A lightweight wrapper around @logto/react that provides Clerk-like API patterns",
+  "name": "@ouim/simple-logto",
+  "version": "0.1.0",
+  "description": "A simpler way to use @logto/react with prebuilt UI components and hooks for fast authentication setup",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -52,10 +52,10 @@
     "authentication",
     "react"
   ],
-  "author": "StackBlitz",
+  "author": "thezem",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/stackblitz/better-logto-react"
+    "url": "https://github.com/thezem/simple-logto"
   }
 }
