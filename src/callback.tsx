@@ -9,13 +9,29 @@ export interface CallbackPageProps {
   onError?: (error: Error) => void
 }
 
+// Define keyframes for spin animation
+const spinKeyframes = `
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`
+
 export const CallbackPage: React.FC<CallbackPageProps> = ({ className = '', loadingComponent, successComponent, onSuccess, onError }) => {
+  React.useEffect(() => {
+    if (!document.querySelector('#spin-keyframes')) {
+      const style = document.createElement('style')
+      style.id = 'spin-keyframes'
+      style.textContent = spinKeyframes
+      document.head.appendChild(style)
+    }
+  }, [])
+
   const { isLoading } = useHandleSignInCallback(() => {
     try {
       if (onSuccess) {
         onSuccess()
       } else {
-        // Default behavior: redirect to home
         window.location.href = '/'
       }
     } catch (error) {
@@ -26,13 +42,46 @@ export const CallbackPage: React.FC<CallbackPageProps> = ({ className = '', load
     }
   })
 
+  const containerStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: '500',
+    minHeight: '100vh',
+  }
+
+  const flexStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  }
+
+  const spinnerStyle = {
+    width: '1.25rem',
+    height: '1.25rem',
+    color: 'black',
+    animation: 'spin 1s linear infinite',
+  }
+
+  const textStyle = {
+    fontSize: '1.125rem',
+    color: '#64748b',
+  }
+
   if (isLoading) {
     return (
-      <div className={`flex items-center justify-center min-h-screen ${className}`}>
+      <div style={containerStyle} className={className}>
         {loadingComponent || (
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600 mx-auto mb-4"></div>
-            <div className="text-lg text-slate-600">Signing you in...</div>
+          <div style={flexStyle}>
+            <svg style={spinnerStyle} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path
+                style={{ opacity: 0.75 }}
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            <div style={textStyle}>Signing you in...</div>
           </div>
         )}
       </div>
@@ -40,10 +89,18 @@ export const CallbackPage: React.FC<CallbackPageProps> = ({ className = '', load
   }
 
   return (
-    <div className={`flex items-center justify-center min-h-screen ${className}`}>
+    <div style={containerStyle} className={className}>
       {successComponent || (
-        <div className="text-center">
-          <div className="text-lg text-slate-600">Authentication complete! Redirecting...</div>
+        <div style={{ ...flexStyle, textAlign: 'center' }}>
+          <svg style={spinnerStyle} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path
+              style={{ opacity: 0.75 }}
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            />
+          </svg>
+          <div style={textStyle}>Authentication complete! Redirecting...</div>
         </div>
       )}
     </div>

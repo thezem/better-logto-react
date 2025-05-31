@@ -55,7 +55,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-100" />
           <DropdownMenuItem onClick={() => signOut({ callbackUrl: signoutCallbackUrl, global: globalSignOut })}>
-            <Button variant={'ghost'} className="w-full flex text-left">
+            <Button variant={'outline'} className="w-full flex text-left">
               <LogOut className="mr-2.5 h-4 w-4" />
               Sign out
             </Button>
