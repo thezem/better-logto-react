@@ -1,6 +1,6 @@
 # OAuth Callback Setup Guide
 
-When using @better-logto/react, you need to set up a callback route to handle the OAuth redirect after authentication.
+When using @ouim/better-logto-react, you need to set up a callback route to handle the OAuth redirect after authentication.
 
 ## Step 1: Create a Callback Route
 
@@ -11,7 +11,7 @@ Create `app/callback/page.tsx`:
 ```tsx
 'use client'
 
-import { CallbackPage } from '@better-logto/react'
+import { CallbackPage } from '@ouim/better-logto-react'
 
 export default function Callback() {
   return (
@@ -35,7 +35,7 @@ export default function Callback() {
 Create `pages/callback.tsx`:
 
 ```tsx
-import { CallbackPage } from '@better-logto/react'
+import { CallbackPage } from '@ouim/better-logto-react'
 
 export default function Callback() {
   return <CallbackPage />
@@ -45,7 +45,7 @@ export default function Callback() {
 ### For React Router
 
 ```tsx
-import { CallbackPage } from '@better-logto/react'
+import { CallbackPage } from '@ouim/better-logto-react'
 
 function CallbackRoute() {
   return <CallbackPage />
@@ -57,7 +57,7 @@ function CallbackRoute() {
 Update your AuthProvider to use the callback URL:
 
 ```tsx
-import { AuthProvider } from '@better-logto/react'
+import { AuthProvider } from '@ouim/better-logto-react'
 
 // Configure your Logto authentication
 const config = {

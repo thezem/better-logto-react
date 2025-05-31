@@ -1,4 +1,4 @@
-# @better-logto/react
+# @ouim/better-logto-react
 
 A lightweight wrapper around @logto/react that provides Clerk-like API patterns for authentication.
 
@@ -12,7 +12,7 @@ A lightweight wrapper around @logto/react that provides Clerk-like API patterns 
 ## Installation
 
 ```bash
-npm install @logto/react @better-logto/react
+npm install @logto/react @ouim/better-logto-react
 ```
 
 ## Quick Start
@@ -20,7 +20,7 @@ npm install @logto/react @better-logto/react
 ### 1. Configure Logto and Setup Callback
 
 ```jsx
-import { AuthProvider, useAuth, UserCenter } from '@better-logto/react'
+import { AuthProvider, useAuth, UserCenter } from '@ouim/better-logto-react'
 
 // Configure your Logto authentication
 const config = {
@@ -182,7 +182,7 @@ If you encounter errors related to `jose` library module resolution when using t
 #### Option 1: Use the configuration helper (Recommended)
 
 ```javascript
-import { viteConfig } from '@better-logto/react'
+import { viteConfig } from '@ouim/better-logto-react'
 
 export default defineConfig({
   ...viteConfig,
@@ -197,7 +197,7 @@ Add to your `vite.config.js`:
 ```javascript
 export default defineConfig({
   optimizeDeps: {
-    include: ['@logto/react', '@better-logto/react'],
+    include: ['@logto/react', '@ouim/better-logto-react'],
   },
   resolve: {
     alias: {
