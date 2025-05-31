@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { LogtoProvider, useLogto } from '@logto/react'
-import { transformUser } from './utils'
+import { transformUser, setCustomNavigate } from './utils'
 import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
 
 // Create auth context
@@ -73,7 +73,15 @@ const InternalAuthProvider = ({ children, callbackUrl }: { children: React.React
 }
 
 // External provider that wraps Logto's provider
-export const AuthProvider = ({ children, config, callbackUrl }: AuthProviderProps) => {
+export const AuthProvider = ({ children, config, callbackUrl, customNavigate }: AuthProviderProps) => {
+  // Set the custom navigate function for the entire library
+  useEffect(() => {
+    setCustomNavigate(customNavigate || null)
+
+    // Cleanup on unmount
+    return () => setCustomNavigate(null)
+  }, [customNavigate])
+
   return (
     <LogtoProvider config={config}>
       <InternalAuthProvider callbackUrl={callbackUrl}>{children}</InternalAuthProvider>

@@ -11,10 +11,16 @@ export type LogtoUser = {
 
 export type AuthMiddleware = 'auth' | 'guest' | undefined
 
+export interface NavigationOptions {
+  replace?: boolean // Use replaceState instead of pushState
+  force?: boolean // Force navigation even if already on the same page
+}
+
 export interface AuthOptions {
   middleware?: AuthMiddleware
   redirectTo?: string
   redirectIfAuthenticated?: string
+  navigationOptions?: NavigationOptions
 }
 
 export interface AuthContextType {
@@ -28,6 +34,7 @@ export interface AuthProviderProps {
   children: React.ReactNode
   config: LogtoConfig
   callbackUrl?: string
+  customNavigate?: (url: string, options?: NavigationOptions) => void
 }
 
 export interface CallbackPageProps {
