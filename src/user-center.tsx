@@ -15,6 +15,7 @@ import {
 export interface UserCenterProps {
   className?: string
   globalSignOut?: boolean
+  signoutCallbackUrl?: string
 }
 
 export const UserCenter: React.FC<UserCenterProps> = ({
