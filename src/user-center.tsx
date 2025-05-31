@@ -55,7 +55,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-100" />
           <DropdownMenuItem onClick={() => signOut({ callbackUrl: signoutCallbackUrl, global: globalSignOut })}>
-            <Button variant={'outline'} className="w-full flex text-left">
+            <Button variant={'destructive'} className="w-full flex text-left">
               <LogOut className="mr-2.5 h-4 w-4" />
               Sign out
             </Button>
@@ -67,7 +67,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="outline-none">
+      <DropdownMenuTrigger className="destructive-none">
         <Avatar className={`h-9 w-9 transition-all hover:ring-2 hover:ring-slate-200 ${className}`}>
           <AvatarFallback className="bg-slate-50">
             <UserCircle className="h-5 w-5 text-slate-400" />
@@ -76,12 +76,12 @@ export const UserCenter: React.FC<UserCenterProps> = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="px-3 py-2">
-          <p className="text-sm font-medium text-slate-900">Welcome</p>
+          <p className="text-sm font-medium text-slate-900">Sign in to your account</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-slate-100" />
         <DropdownMenuItem onClick={() => signIn()}>
-          <Button variant={'ghost'} className="w-full flex text-left">
-            <User className="mr-2.5 h-4 w-4" />
+          <Button variant={'default'} className=" w-full flex gap-1.5 text-left">
+            <User className="h-4 w-4" />
             Sign in
           </Button>
         </DropdownMenuItem>
