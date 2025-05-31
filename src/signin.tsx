@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './useAuth'
+import LoadingSpinner from './components/ui/loading-spinner'
 
 export function SignInPage() {
   const { user, signIn, isLoadingUser } = useAuth()
@@ -33,10 +34,14 @@ export function SignInPage() {
       // If user is not authenticated, trigger sign-in
       signIn()
     }
-  }, [isPopup, user, isLoadingUser]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isPopup, user, isLoadingUser, signIn])
 
   if (isLoadingUser) {
-    return <div className="loading-spinner">Loading...</div>
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   return null

@@ -81,80 +81,86 @@ const InternalAuthProvider = ({
     }
   }, [loadUser])
 
-  const signIn = async (overrideCallbackUrl?: string, usePopup?: boolean) => {
-    const shouldUsePopup = usePopup ?? enablePopupSignIn
-    if (!shouldUsePopup) {
-      const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
-      await logtoSignIn(redirectUrl)
-    } else {
-      // Use popup sign-in
-      const popupWidth = 400
-      const popupHeight = 600
-      const left = window.innerWidth / 2 - popupWidth / 2
-      const top = window.innerHeight / 2 - popupHeight / 2
-      const popupFeatures = `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+  const signIn = useCallback(
+    async (overrideCallbackUrl?: string, usePopup?: boolean) => {
+      const shouldUsePopup = usePopup ?? enablePopupSignIn
+      if (!shouldUsePopup) {
+        const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
+        await logtoSignIn(redirectUrl)
+      } else {
+        // Use popup sign-in
+        const popupWidth = 400
+        const popupHeight = 600
+        const left = window.innerWidth / 2 - popupWidth / 2
+        const top = window.innerHeight / 2 - popupHeight / 2
+        const popupFeatures = `width=${popupWidth},height=${popupHeight},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
 
-      // Use the signin page route - assume user has it at /signin
-      const popup = window.open('/signin', 'SignInPopup', popupFeatures)
+        // Use the signin page route - assume user has it at /signin
+        const popup = window.open('/signin', 'SignInPopup', popupFeatures)
 
-      // Listen for the popup to close or complete authentication
-      const checkClosed = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(checkClosed)
-          // Dispatch event to refresh auth state when popup closes
-          window.dispatchEvent(new CustomEvent('auth-state-changed'))
+        // Listen for the popup to close or complete authentication
+        const checkClosed = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(checkClosed)
+            // Dispatch event to refresh auth state when popup closes
+            window.dispatchEvent(new CustomEvent('auth-state-changed'))
+          }
+        }, 1000)
+
+        // Listen for messages from the popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return
+
+          if (event.data.type === 'SIGNIN_SUCCESS' || event.data.type === 'SIGNIN_COMPLETE') {
+            window.dispatchEvent(new CustomEvent('auth-state-changed'))
+            popup?.close()
+            clearInterval(checkClosed)
+          }
         }
-      }, 1000)
 
-      // Listen for messages from the popup
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return
+        window.addEventListener('message', handleMessage)
 
-        if (event.data.type === 'SIGNIN_SUCCESS' || event.data.type === 'SIGNIN_COMPLETE') {
-          window.dispatchEvent(new CustomEvent('auth-state-changed'))
-          popup?.close()
+        // Cleanup listener when popup closes
+        const cleanupListener = () => {
+          window.removeEventListener('message', handleMessage)
           clearInterval(checkClosed)
+        }
+
+        setTimeout(cleanupListener, 300000) // 5 minutes timeout
+        // Use regular redirect sign-in
+        const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
+        await logtoSignIn(redirectUrl)
+      }
+    },
+    [enablePopupSignIn, callbackUrl, logtoSignIn],
+  )
+
+  const signOut = useCallback(
+    async (options?: { callbackUrl?: string; global?: boolean }) => {
+      const { callbackUrl, global = true } = options || {}
+
+      if (global) {
+        // Global sign out - logs out from entire Logto ecosystem
+        await logtoSignOut(callbackUrl)
+      } else {
+        // Local sign out - only clears local session
+        setUser(null)
+        setIsLoadingUser(false)
+
+        // Optional: Clear any local storage or session storage if needed
+        // localStorage.removeItem('logto_session')
+        // sessionStorage.clear()
+
+        if (callbackUrl) {
+          window.location.href = callbackUrl
         }
       }
 
-      window.addEventListener('message', handleMessage)
-
-      // Cleanup listener when popup closes
-      const cleanupListener = () => {
-        window.removeEventListener('message', handleMessage)
-        clearInterval(checkClosed)
-      }
-
-      setTimeout(cleanupListener, 300000) // 5 minutes timeout
-      // Use regular redirect sign-in
-      const redirectUrl = overrideCallbackUrl || callbackUrl || window.location.href
-      await logtoSignIn(redirectUrl)
-    }
-  }
-
-  const signOut = async (options?: { callbackUrl?: string; global?: boolean }) => {
-    const { callbackUrl, global = true } = options || {}
-
-    if (global) {
-      // Global sign out - logs out from entire Logto ecosystem
-      await logtoSignOut(callbackUrl)
-    } else {
-      // Local sign out - only clears local session
-      setUser(null)
-      setIsLoadingUser(false)
-
-      // Optional: Clear any local storage or session storage if needed
-      // localStorage.removeItem('logto_session')
-      // sessionStorage.clear()
-
-      if (callbackUrl) {
-        window.location.href = callbackUrl
-      }
-    }
-
-    // Dispatch custom event to notify other windows/tabs
-    window.dispatchEvent(new CustomEvent('auth-state-changed'))
-  }
+      // Dispatch custom event to notify other windows/tabs
+      window.dispatchEvent(new CustomEvent('auth-state-changed'))
+    },
+    [logtoSignOut],
+  )
 
   const value: AuthContextType = {
     user,
