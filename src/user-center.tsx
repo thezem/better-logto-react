@@ -67,7 +67,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="destructive-none">
+      <DropdownMenuTrigger className="outline-none">
         <Avatar className={`h-9 w-9 transition-all hover:ring-2 hover:ring-slate-200 ${className}`}>
           <AvatarFallback className="bg-slate-50">
             <UserCircle className="h-5 w-5 text-slate-400" />
