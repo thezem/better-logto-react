@@ -6,7 +6,6 @@ export function SignInPage() {
   const { user, signIn, isLoadingUser } = useAuth()
   const [isPopup, setIsPopup] = useState(false)
   const signInCalled = useRef(false)
-  console.log(isLoadingUser)
 
   useEffect(() => {
     // Method 1: Check if window has an opener (opened by another window)
@@ -19,6 +18,16 @@ export function SignInPage() {
 
   useEffect(() => {
     if (isLoadingUser) return
+
+    if (user) {
+      if (isPopup && window.opener && window.opener !== window) {
+        window.opener.postMessage({ type: 'SIGNIN_COMPLETE' }, window.location.origin)
+        setTimeout(() => window.close(), 100)
+      } else {
+        window.location.href = '/'
+      }
+      return
+    }
 
     if (!signInCalled.current) {
       signInCalled.current = true
