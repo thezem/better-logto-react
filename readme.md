@@ -72,6 +72,18 @@ function Navbar() {
 - Accepts optional props:
   - `className`
   - `signoutCallbackUrl` (defaults to `/`)
+  - `globalSignOut` (defaults to `true`)
+  - `additionalPages` - array of `{ link: string; text: string; icon?: ReactNode }`
+
+Example adding custom pages:
+
+```tsx
+<UserCenter
+  additionalPages={[
+    { link: '/settings', text: 'Go to your settings' },
+  ]}
+/>
+```
 
 ---
 

@@ -47,3 +47,9 @@ export interface CallbackPageProps {
   onSuccess?: () => void
   onError?: (error: Error) => void
 }
+
+export interface AdditionalPage {
+  link: string
+  text: string
+  icon?: React.ReactNode
+}

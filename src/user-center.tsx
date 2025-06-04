@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAuth } from './useAuth'
-import { getInitials } from './utils'
+import { getInitials, cn, navigateTo } from './utils'
 import { User, LogOut, UserCircle } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar'
 import {
@@ -12,17 +12,20 @@ import {
   DropdownMenuTrigger,
 } from './components/ui/dropdown-menu'
 import { Button } from './components/ui/button'
+import type { AdditionalPage } from './types'
 
 export interface UserCenterProps {
   className?: string
   globalSignOut?: boolean
   signoutCallbackUrl?: string
+  additionalPages?: AdditionalPage[]
 }
 
 export const UserCenter: React.FC<UserCenterProps> = ({
   className = '',
   globalSignOut = true,
   signoutCallbackUrl = window.location.href,
+  additionalPages = [],
 }) => {
   const { user, isLoadingUser, signOut, signIn } = useAuth()
 
@@ -54,6 +57,20 @@ export const UserCenter: React.FC<UserCenterProps> = ({
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-100" />
+          {additionalPages.map(({ link, text, icon }, idx) => (
+            <DropdownMenuItem key={idx} onSelect={() => navigateTo(link)}>
+              <Button variant={'ghost'} className="w-full flex text-left">
+                {icon &&
+                  (React.isValidElement(icon)
+                    ? React.cloneElement(icon as React.ReactElement, {
+                        className: cn('mr-2.5 h-4 w-4', (icon as React.ReactElement).props.className),
+                      })
+                    : icon)}
+                {text}
+              </Button>
+            </DropdownMenuItem>
+          ))}
+          {additionalPages.length > 0 && <DropdownMenuSeparator className="bg-slate-100" />}
           <DropdownMenuItem onClick={() => signOut({ callbackUrl: signoutCallbackUrl, global: globalSignOut })}>
             <Button variant={'destructive'} className="w-full flex text-left">
               <LogOut className="mr-2.5 h-4 w-4" />
