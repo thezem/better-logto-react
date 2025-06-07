@@ -18,6 +18,7 @@ import type { AdditionalPage } from './types'
 export interface UserCenterProps {
   className?: string
   globalSignOut?: boolean
+  themeClassnames?: string
   signoutCallbackUrl?: string
   additionalPages?: AdditionalPage[]
 }
@@ -27,6 +28,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
   globalSignOut = true,
   signoutCallbackUrl,
   additionalPages = [],
+  themeClassnames = 'dark:bg-[#171717] dark:text-slate-200 bg-white text-slate-900',
 }) => {
   const { user, isLoadingUser, signOut, signIn } = useAuth()
   const [hasMounted, setHasMounted] = useState(false)
@@ -43,7 +45,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
   if (!hasMounted || isLoadingUser) {
     return (
       <div className={`relative ${className}`}>
-        <div className="h-9 w-9 rounded-full bg-slate-100 animate-pulse" />
+        <div className="h-8 w-8 rounded-full bg-slate-100 animate-pulse" />
       </div>
     )
   }
@@ -52,7 +54,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
     return (
       <DropdownMenu>
         <DropdownMenuTrigger className="outline-none">
-          <Avatar className={`h-9 w-9 transition-all hover:ring-2 hover:ring-red-2 ${className}`}>
+          <Avatar className={`h-8 w-8 transition-all hover:ring-2 hover:ring-red-2 ${className}`}>
             {user.avatar ? (
               <AvatarImage src={user.avatar} alt={user.name || 'User'} className="object-cover" />
             ) : (
@@ -60,11 +62,11 @@ export const UserCenter: React.FC<UserCenterProps> = ({
             )}
           </Avatar>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent align="end" className={`w-64 ${themeClassnames}`}>
           <DropdownMenuLabel className="px-2 py-2">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-semibold text-slate-900">{user.name || 'User'}</p>
-              {user.email && <p className="text-xs text-slate-500 truncate">{user.email}</p>}
+              <p className={`text-sm font-semibold `}>{user.name || 'User'}</p>
+              {user.email && <p className={`text-xs text-slate-500 truncate `}>{user.email}</p>}
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-slate-100" />
@@ -102,9 +104,9 @@ export const UserCenter: React.FC<UserCenterProps> = ({
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
+      <DropdownMenuContent align="end" className={`w-64 ${themeClassnames}`}>
         <DropdownMenuLabel className="px-3 py-2">
-          <p className="text-sm font-medium text-slate-900">Sign in to your account</p>
+          <p className={`text-sm font-medium ${themeClassnames}`}>Sign in to your account</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-slate-100" />
         <DropdownMenuItem onClick={() => signIn()}>
