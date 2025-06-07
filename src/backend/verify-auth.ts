@@ -140,7 +140,6 @@ function findMatchingKey(keys: any[], kid?: string, alg?: string): any {
  */
 function verifyTokenClaims(payload: any, options: VerifyAuthOptions): void {
   const { logtoUrl, audience, requiredScope } = options
-  console.log(options)
 
   const expectedIssuer = new URL(`oidc`, logtoUrl).toString()
 
@@ -148,8 +147,6 @@ function verifyTokenClaims(payload: any, options: VerifyAuthOptions): void {
   if (payload.iss !== expectedIssuer) {
     throw new Error(`Invalid issuer. Expected: ${expectedIssuer}, Got: ${payload.iss}`)
   }
-
-  console.log(audience, payload.aud, requiredScope, payload.scope)
 
   // Verify audience
   if (audience && payload.aud !== audience) {
@@ -211,8 +208,6 @@ export async function verifyLogtoToken(token: string, options: VerifyAuthOptions
       isGuest: false,
     }
   } catch (error) {
-    console.log(error)
-
     throw new Error(`Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
@@ -260,7 +255,6 @@ export function createExpressAuthMiddleware(options: VerifyAuthOptions) {
           message: 'No token found in cookies or Authorization header',
         })
       }
-      console.log('Verifying token:', token)
 
       const authContext = await verifyLogtoToken(token, options)
       req.auth = authContext
