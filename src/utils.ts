@@ -107,25 +107,22 @@ export const cookieUtils = {
   /**
    * Set a cookie with the given name, value, and options
    */
-  setCookie: (name: string, value: string, options: {
-    expires?: Date | number
-    maxAge?: number
-    domain?: string
-    path?: string
-    secure?: boolean
-    sameSite?: 'strict' | 'lax' | 'none'
-    httpOnly?: boolean
-  } = {}) => {
+  setCookie: (
+    name: string,
+    value: string,
+    options: {
+      expires?: Date | number
+      maxAge?: number
+      domain?: string
+      path?: string
+      secure?: boolean
+      sameSite?: 'strict' | 'lax' | 'none'
+      httpOnly?: boolean
+    } = {},
+  ) => {
     if (typeof document === 'undefined') return
 
-    const {
-      expires,
-      maxAge,
-      domain,
-      path = '/',
-      secure = window.location.protocol === 'https:',
-      sameSite = 'lax'
-    } = options
+    const { expires, maxAge, domain, path = '/', secure = window.location.protocol === 'https:', sameSite = 'lax' } = options
 
     let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
 
@@ -179,10 +176,13 @@ export const cookieUtils = {
   /**
    * Remove a cookie by name
    */
-  removeCookie: (name: string, options: {
-    domain?: string
-    path?: string
-  } = {}) => {
+  removeCookie: (
+    name: string,
+    options: {
+      domain?: string
+      path?: string
+    } = {},
+  ) => {
     if (typeof document === 'undefined') return
 
     const { domain, path = '/' } = options
@@ -198,7 +198,7 @@ export const cookieUtils = {
     }
 
     document.cookie = cookieString
-  }
+  },
 }
 
 /**
@@ -213,7 +213,7 @@ export const jwtCookieUtils = {
       expires: 7, // 7 days
       secure: true,
       sameSite: 'strict',
-      path: '/'
+      path: '/',
     })
   },
 
@@ -229,9 +229,9 @@ export const jwtCookieUtils = {
    */
   removeToken: () => {
     cookieUtils.removeCookie('logto_authtoken', {
-      path: '/'
+      path: '/',
     })
-  }
+  },
 }
 
 /**
