@@ -1,3 +1,4 @@
+'use client'
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { LogtoProvider, useLogto } from '@logto/react'
 import { transformUser, setCustomNavigate } from './utils'

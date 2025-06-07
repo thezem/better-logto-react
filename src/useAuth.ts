@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useMemo } from 'react'
 import { useAuthContext } from './context'
 import { navigateTo } from './utils'

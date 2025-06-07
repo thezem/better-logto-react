@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useAuth } from './useAuth'
 import LoadingSpinner from './components/ui/loading-spinner'
