@@ -1,5 +1,5 @@
 'use client'
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { LogtoProvider, useLogto } from '@logto/react'
 import { transformUser, setCustomNavigate, jwtCookieUtils } from './utils'
 import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
@@ -32,19 +32,32 @@ const InternalAuthProvider = ({
   callbackUrl?: string
   enablePopupSignIn?: boolean
 }) => {
-  const { isAuthenticated, isLoading, getIdTokenClaims, getIdToken, signIn: logtoSignIn, signOut: logtoSignOut } = useLogto()
+  const { isAuthenticated, isLoading, getIdTokenClaims, getAccessToken, signIn: logtoSignIn, signOut: logtoSignOut } = useLogto()
   const [user, setUser] = useState<LogtoUser | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true)
 
+  // Rate limiting to prevent infinite calls
+  const lastLoadTime = useRef<number>(0)
+  const errorCount = useRef<number>(0)
+  const MAX_ERROR_COUNT = 3
+  const MIN_LOAD_INTERVAL = 1000 // 1 second between calls
+
   const loadUser = useCallback(async () => {
     if (isLoading) return
+
+    // Rate limiting check
+    const now = Date.now()
+    if (now - lastLoadTime.current < MIN_LOAD_INTERVAL) {
+      return
+    }
+    lastLoadTime.current = now
 
     setIsLoadingUser(true)
 
     if (isAuthenticated) {
       try {
         const claims = await getIdTokenClaims()
-        const jwt = await getIdToken()
+        const jwt = await getAccessToken()
 
         // Save JWT token to cookie
         if (jwt) {
@@ -52,29 +65,65 @@ const InternalAuthProvider = ({
         }
 
         setUser(transformUser(claims))
-      } catch (error) {
+        // Reset error count on success
+        errorCount.current = 0
+      } catch (error: any) {
         console.error('Error fetching user claims:', error)
+        errorCount.current += 1
+
+        // Clear user state and remove token on any authentication error
         setUser(null)
-        // Remove token cookie on error
         jwtCookieUtils.removeToken()
+
+        // If we've hit max errors or it's clearly an auth error, force logout
+        const isAuthError =
+          error?.message?.includes('invalid') ||
+          error?.message?.includes('expired') ||
+          error?.message?.includes('Grant request is invalid') ||
+          error?.code === 'invalid_grant' ||
+          errorCount.current >= MAX_ERROR_COUNT
+
+        if (isAuthError) {
+          console.warn('Authentication error detected, forcing logout:', error.message)
+          try {
+            // Force a complete logout to clear all auth state
+            await logtoSignOut()
+          } catch (logoutError) {
+            console.error('Error during forced logout:', logoutError)
+            // Even if logout fails, dispatch event to notify other components
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('auth-state-changed'))
+            }
+          }
+          // Reset error count after logout
+          errorCount.current = 0
+        }
       }
     } else {
       setUser(null)
       // Remove token cookie when not authenticated
       jwtCookieUtils.removeToken()
+      // Reset error count when not authenticated
+      errorCount.current = 0
     }
 
     setIsLoadingUser(false)
-  }, [isLoading, isAuthenticated, getIdTokenClaims, getIdToken])
+  }, [isLoading, isAuthenticated, getIdTokenClaims, getAccessToken, logtoSignOut])
 
   useEffect(() => {
     loadUser()
   }, [loadUser])
 
+  // Store the latest loadUser function in a ref to avoid recreating event listeners
+  const loadUserRef = useRef(loadUser)
+  loadUserRef.current = loadUser
+
   // Add effect to handle cross-window/tab authentication state changes
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return
+
+    let lastFocusTime = 0
 
     // Listen for storage changes (when auth state changes in other tabs)
     const handleStorageChange = (e: StorageEvent) => {
@@ -82,20 +131,25 @@ const InternalAuthProvider = ({
       if (e.key && (e.key.includes('logto') || e.key.includes('auth'))) {
         // Refresh auth state when storage changes
         setTimeout(() => {
-          loadUser()
+          loadUserRef.current()
         }, 100) // Small delay to ensure storage is updated
       }
     }
 
     // Listen for window focus to refresh auth state
     const handleWindowFocus = () => {
-      // Refresh auth state when window regains focus
-      loadUser()
+      // Only refresh if it's been more than 1 second since last focus
+      // to prevent excessive re-renders
+      const now = Date.now()
+      if (now - lastFocusTime > 1000) {
+        lastFocusTime = now
+        loadUserRef.current()
+      }
     }
 
     // Listen for custom auth change events
     const handleAuthChange = () => {
-      loadUser()
+      loadUserRef.current()
     }
 
     // Add event listeners
@@ -109,7 +163,7 @@ const InternalAuthProvider = ({
       window.removeEventListener('focus', handleWindowFocus)
       window.removeEventListener('auth-state-changed', handleAuthChange)
     }
-  }, [loadUser])
+  }, []) // Empty dependency array to prevent recreating listeners
 
   const signIn = useCallback(
     async (overrideCallbackUrl?: string, usePopup?: boolean) => {
@@ -157,7 +211,7 @@ const InternalAuthProvider = ({
           if (event.origin !== window.location.origin) return
 
           if (event.data.type === 'SIGNIN_SUCCESS' || event.data.type === 'SIGNIN_COMPLETE') {
-            loadUser()
+            loadUserRef.current()
             window.dispatchEvent(new CustomEvent('auth-state-changed'))
             popup?.close()
             clearInterval(checkClosed)
@@ -211,14 +265,17 @@ const InternalAuthProvider = ({
     [logtoSignOut],
   )
 
-  const value: AuthContextType = {
-    user,
-    isLoadingUser,
-    signIn,
-    signOut,
-    refreshAuth: loadUser,
-    enablePopupSignIn,
-  }
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      isLoadingUser,
+      signIn,
+      signOut,
+      refreshAuth: () => loadUserRef.current(),
+      enablePopupSignIn,
+    }),
+    [user, isLoadingUser, signIn, signOut, enablePopupSignIn],
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
