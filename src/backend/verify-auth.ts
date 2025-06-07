@@ -125,7 +125,9 @@ function findMatchingKey(keys: any[], kid?: string, alg?: string): any {
  */
 function verifyTokenClaims(payload: any, options: VerifyAuthOptions): void {
   const { logtoUrl, audience, requiredScope } = options
-  const expectedIssuer = `${logtoUrl}/oidc`
+  console.log(options)
+
+  const expectedIssuer = new URL(`oidc`, logtoUrl).toString()
 
   // Verify issuer
   if (payload.iss !== expectedIssuer) {

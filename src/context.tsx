@@ -1,6 +1,6 @@
 'use client'
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react'
-import { LogtoProvider, useLogto } from '@logto/react'
+import { LogtoConfig, LogtoProvider, useLogto } from '@logto/react'
 import { transformUser, setCustomNavigate, jwtCookieUtils } from './utils'
 import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
 
@@ -27,10 +27,12 @@ const InternalAuthProvider = ({
   children,
   callbackUrl,
   enablePopupSignIn,
+  logtoConfig,
 }: {
   children: React.ReactNode
   callbackUrl?: string
   enablePopupSignIn?: boolean
+  logtoConfig: LogtoConfig // Logto configuration object
 }) => {
   const { isAuthenticated, isLoading, getIdTokenClaims, getAccessToken, signIn: logtoSignIn, signOut: logtoSignOut } = useLogto()
   const [user, setUser] = useState<LogtoUser | null>(null)
@@ -57,7 +59,7 @@ const InternalAuthProvider = ({
     if (isAuthenticated) {
       try {
         const claims = await getIdTokenClaims()
-        const jwt = await getAccessToken()
+        const jwt = await getAccessToken(logtoConfig?.resources?.[0] || 'urn:logto:resource:default')
 
         // Save JWT token to cookie
         if (jwt) {
@@ -293,7 +295,7 @@ export const AuthProvider = ({ children, config, callbackUrl, customNavigate, en
   return (
     <ClientOnly>
       <LogtoProvider config={config}>
-        <InternalAuthProvider callbackUrl={callbackUrl} enablePopupSignIn={enablePopupSignIn}>
+        <InternalAuthProvider logtoConfig={config} callbackUrl={callbackUrl} enablePopupSignIn={enablePopupSignIn}>
           {children}
         </InternalAuthProvider>
       </LogtoProvider>
