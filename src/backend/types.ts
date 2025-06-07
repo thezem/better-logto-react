@@ -5,9 +5,11 @@ export interface AuthPayload {
 }
 
 export interface AuthContext {
-  userId: string
+  userId: string | null
   isAuthenticated: boolean
-  payload: AuthPayload
+  payload: AuthPayload | null
+  isGuest?: boolean
+  guestId?: string
 }
 
 export interface VerifyAuthOptions {
@@ -15,6 +17,7 @@ export interface VerifyAuthOptions {
   audience: string
   cookieName?: string
   requiredScope?: string
+  allowGuest?: boolean
 }
 
 // Express middleware types

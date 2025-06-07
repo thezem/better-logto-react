@@ -1,6 +1,7 @@
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import type { LogtoUser, NavigationOptions } from './types'
+import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
 /**
  * Transform Logto user object to a simpler format
@@ -231,6 +232,84 @@ export const jwtCookieUtils = {
     cookieUtils.removeCookie('logto_authtoken', {
       path: '/',
     })
+  },
+}
+
+/**
+ * Client-side guest utilities
+ */
+export const guestUtils = {
+  /**
+   * Generate a fingerprint-based guest ID
+   */
+  async generateGuestId(): Promise<string> {
+    try {
+      const fp = await FingerprintJS.load()
+      const result = await fp.get()
+      return result.visitorId
+    } catch (error) {
+      console.warn('Failed to generate fingerprint, falling back to UUID:', error)
+      // Fallback to UUID generation
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID()
+      }
+      // Fallback UUID generation for older browsers
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = (Math.random() * 16) | 0
+        const v = c === 'x' ? r : (r & 0x3) | 0x8
+        return v.toString(16)
+      })
+    }
+  },
+
+  /**
+   * Get guest ID from cookie
+   */
+  getGuestId(): string | null {
+    if (typeof document === 'undefined') return null
+
+    const cookies = document.cookie.split(';')
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=')
+      if (name === 'guest_logto_authtoken') {
+        return value
+      }
+    }
+    return null
+  },
+
+  /**
+   * Set guest ID cookie
+   */
+  async setGuestId(guestId?: string): Promise<string> {
+    if (typeof document === 'undefined') return guestId || ''
+
+    const id = guestId || (await this.generateGuestId())
+    const expires = new Date()
+    expires.setDate(expires.getDate() + 7) // 7 days
+
+    document.cookie = `guest_logto_authtoken=${id}; expires=${expires.toUTCString()}; path=/; SameSite=Strict`
+    return id
+  },
+
+  /**
+   * Ensure guest ID exists, create if not
+   */
+  async ensureGuestId(): Promise<string> {
+    const existingId = this.getGuestId()
+    if (existingId) {
+      return existingId
+    }
+    return await this.setGuestId()
+  },
+
+  /**
+   * Clear guest ID cookie
+   */
+  clearGuestId(): void {
+    if (typeof document === 'undefined') return
+
+    document.cookie = 'guest_logto_authtoken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict'
   },
 }
 

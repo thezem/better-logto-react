@@ -6,6 +6,21 @@ const jwksCache = new Map<string, { keys: any[]; expires: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 /**
+ * Extract guest token from cookie
+ */
+function extractGuestTokenFromCookies(cookies: any, cookieName: string = 'guest_logto_authtoken'): string | null {
+  if (typeof cookies?.get === 'function') {
+    // Next.js cookies
+    const cookie = cookies.get(cookieName)
+    return cookie?.value || generateUUID()
+  } else if (cookies && typeof cookies === 'object') {
+    // Express cookies
+    return cookies[cookieName] || generateUUID()
+  }
+  return generateUUID()
+}
+
+/**
  * Extract token from cookie
  */
 function extractTokenFromCookies(cookies: any, cookieName: string = 'logto_authtoken'): string | null {
@@ -193,12 +208,22 @@ export async function verifyLogtoToken(token: string, options: VerifyAuthOptions
       userId: payload.sub,
       isAuthenticated: true,
       payload,
+      isGuest: false,
     }
   } catch (error) {
     console.log(error)
 
     throw new Error(`Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
+}
+
+const generateUUID = () => {
+  // Generate a random UUID (v4)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0
+    const v = c === 'x' ? r : (r & 0x3) | 0x8
+    return v.toString(16)
+  })
 }
 
 /**
@@ -215,6 +240,21 @@ export function createExpressAuthMiddleware(options: VerifyAuthOptions) {
       }
 
       if (!token) {
+        // If allowGuest is enabled, check for guest cookie
+        if (options.allowGuest) {
+          const guestId = extractGuestTokenFromCookies(req.cookies)
+
+          req.auth = {
+            userId: null,
+            isAuthenticated: false,
+            payload: null,
+            isGuest: true,
+            guestId: guestId || undefined,
+          }
+
+          return next()
+        }
+
         return res.status(401).json({
           error: 'Authentication required',
           message: 'No token found in cookies or Authorization header',
@@ -227,6 +267,21 @@ export function createExpressAuthMiddleware(options: VerifyAuthOptions) {
 
       return next()
     } catch (error) {
+      // If allowGuest is enabled and token verification fails, fall back to guest
+      if (options.allowGuest) {
+        const guestId = extractGuestTokenFromCookies(req.cookies)
+
+        req.auth = {
+          userId: null,
+          isAuthenticated: false,
+          payload: null,
+          isGuest: true,
+          guestId: guestId || undefined,
+        }
+
+        return next()
+      }
+
       return res.status(401).json({
         error: 'Authentication failed',
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -241,7 +296,7 @@ export function createExpressAuthMiddleware(options: VerifyAuthOptions) {
 export async function verifyNextAuth(
   request: NextRequest,
   options: VerifyAuthOptions,
-): Promise<{ success: true; auth: AuthContext } | { success: false; error: string }> {
+): Promise<{ success: true; auth: AuthContext } | { success: false; error: string; auth?: AuthContext }> {
   try {
     // Try to get token from cookie first, then from Authorization header
     let token = extractTokenFromCookies(request.cookies, options.cookieName)
@@ -251,6 +306,25 @@ export async function verifyNextAuth(
     }
 
     if (!token) {
+      // If allowGuest is enabled, check for existing guest cookie
+      if (options.allowGuest) {
+        const guestId = extractGuestTokenFromCookies(request.cookies)
+
+        const guestAuth: AuthContext = {
+          userId: null,
+          isAuthenticated: false,
+          payload: null,
+          isGuest: true,
+          guestId: guestId || undefined,
+        }
+
+        return {
+          success: false,
+          error: 'No authentication token found',
+          auth: guestAuth,
+        }
+      }
+
       return {
         success: false,
         error: 'No token found in cookies or Authorization header',
@@ -264,6 +338,25 @@ export async function verifyNextAuth(
       auth: authContext,
     }
   } catch (error) {
+    // If allowGuest is enabled and token verification fails, fall back to guest
+    if (options.allowGuest) {
+      const guestId = extractGuestTokenFromCookies(request.cookies)
+
+      const guestAuth: AuthContext = {
+        userId: null,
+        isAuthenticated: false,
+        payload: null,
+        isGuest: true,
+        guestId: guestId || undefined,
+      }
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        auth: guestAuth,
+      }
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -288,11 +381,41 @@ export async function verifyAuth(
       extractTokenFromCookies(tokenOrRequest.cookies, options.cookieName) || extractBearerTokenFromHeaders(tokenOrRequest.headers)
 
     if (!extractedToken) {
+      // If allowGuest is enabled, check for guest cookie
+      if (options.allowGuest) {
+        const guestId = extractGuestTokenFromCookies(tokenOrRequest.cookies)
+
+        return {
+          userId: null,
+          isAuthenticated: false,
+          payload: null,
+          isGuest: true,
+          guestId: guestId || undefined,
+        }
+      }
+
       throw new Error('No token found in request')
     }
 
     token = extractedToken
   }
 
-  return verifyLogtoToken(token, options)
+  try {
+    return await verifyLogtoToken(token, options)
+  } catch (error) {
+    // If allowGuest is enabled and token verification fails, fall back to guest
+    if (options.allowGuest && typeof tokenOrRequest === 'object') {
+      const guestId = extractGuestTokenFromCookies(tokenOrRequest.cookies)
+
+      return {
+        userId: null,
+        isAuthenticated: false,
+        payload: null,
+        isGuest: true,
+        guestId: guestId || undefined,
+      }
+    }
+
+    throw error
+  }
 }

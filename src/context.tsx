@@ -1,7 +1,7 @@
 'use client'
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { LogtoConfig, LogtoProvider, useLogto } from '@logto/react'
-import { transformUser, setCustomNavigate, jwtCookieUtils } from './utils'
+import { transformUser, setCustomNavigate, jwtCookieUtils, guestUtils } from './utils'
 import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
 
 // Create auth context
@@ -124,6 +124,8 @@ const InternalAuthProvider = ({
   useEffect(() => {
     // Only run on client side
     if (typeof window === 'undefined') return
+
+    guestUtils.ensureGuestId() // Ensure guest ID is set
 
     let lastFocusTime = 0
 
