@@ -1,4 +1,5 @@
-import React from 'react'
+'use client'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from './useAuth'
 import { getInitials, cn, navigateTo } from './utils'
 import { User, LogOut, UserCircle } from 'lucide-react'
@@ -24,12 +25,22 @@ export interface UserCenterProps {
 export const UserCenter: React.FC<UserCenterProps> = ({
   className = '',
   globalSignOut = true,
-  signoutCallbackUrl = window.location.href,
+  signoutCallbackUrl,
   additionalPages = [],
 }) => {
   const { user, isLoadingUser, signOut, signIn } = useAuth()
+  const [hasMounted, setHasMounted] = useState(false)
 
-  if (isLoadingUser) {
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
+  // Handle default signoutCallbackUrl safely on the client side
+  const defaultSignoutUrl = hasMounted && typeof window !== 'undefined' ? window.location.href : '/'
+  const finalSignoutUrl = signoutCallbackUrl || defaultSignoutUrl
+
+  // Show loading state until mounted to prevent hydration mismatch
+  if (!hasMounted || isLoadingUser) {
     return (
       <div className={`relative ${className}`}>
         <div className="h-9 w-9 rounded-full bg-slate-100 animate-pulse" />
@@ -71,7 +82,7 @@ export const UserCenter: React.FC<UserCenterProps> = ({
             </DropdownMenuItem>
           ))}
           {additionalPages.length > 0 && <DropdownMenuSeparator className="bg-slate-100" />}
-          <DropdownMenuItem onClick={() => signOut({ callbackUrl: signoutCallbackUrl, global: globalSignOut })}>
+          <DropdownMenuItem onClick={() => signOut({ callbackUrl: finalSignoutUrl, global: globalSignOut })}>
             <Button variant={'destructive'} className="w-full flex text-left">
               <LogOut className="mr-2.5 h-4 w-4" />
               Sign out

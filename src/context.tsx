@@ -1,11 +1,26 @@
 'use client'
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { LogtoProvider, useLogto } from '@logto/react'
-import { transformUser, setCustomNavigate } from './utils'
+import { transformUser, setCustomNavigate, jwtCookieUtils } from './utils'
 import type { AuthContextType, AuthProviderProps, LogtoUser } from './types'
 
 // Create auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+// Client-only wrapper to prevent SSR issues
+const ClientOnly = ({ children }: { children: React.ReactNode }) => {
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
+  if (!hasMounted) {
+    return null
+  }
+
+  return <>{children}</>
+}
 
 // Internal provider that wraps Logto's context
 const InternalAuthProvider = ({
@@ -17,7 +32,7 @@ const InternalAuthProvider = ({
   callbackUrl?: string
   enablePopupSignIn?: boolean
 }) => {
-  const { isAuthenticated, isLoading, getIdTokenClaims, signIn: logtoSignIn, signOut: logtoSignOut } = useLogto()
+  const { isAuthenticated, isLoading, getIdTokenClaims, getIdToken, signIn: logtoSignIn, signOut: logtoSignOut } = useLogto()
   const [user, setUser] = useState<LogtoUser | null>(null)
   const [isLoadingUser, setIsLoadingUser] = useState<boolean>(true)
 
@@ -29,17 +44,28 @@ const InternalAuthProvider = ({
     if (isAuthenticated) {
       try {
         const claims = await getIdTokenClaims()
+        const jwt = await getIdToken()
+
+        // Save JWT token to cookie
+        if (jwt) {
+          jwtCookieUtils.saveToken(jwt)
+        }
+
         setUser(transformUser(claims))
       } catch (error) {
         console.error('Error fetching user claims:', error)
         setUser(null)
+        // Remove token cookie on error
+        jwtCookieUtils.removeToken()
       }
     } else {
       setUser(null)
+      // Remove token cookie when not authenticated
+      jwtCookieUtils.removeToken()
     }
 
     setIsLoadingUser(false)
-  }, [isLoading, isAuthenticated, getIdTokenClaims])
+  }, [isLoading, isAuthenticated, getIdTokenClaims, getIdToken])
 
   useEffect(() => {
     loadUser()
@@ -47,6 +73,9 @@ const InternalAuthProvider = ({
 
   // Add effect to handle cross-window/tab authentication state changes
   useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') return
+
     // Listen for storage changes (when auth state changes in other tabs)
     const handleStorageChange = (e: StorageEvent) => {
       // Logto typically stores auth state in localStorage
@@ -84,6 +113,9 @@ const InternalAuthProvider = ({
 
   const signIn = useCallback(
     async (overrideCallbackUrl?: string, usePopup?: boolean) => {
+      // Only run on client side
+      if (typeof window === 'undefined') return
+
       // Check if we're already in a popup to prevent infinite loops
       const isInPopup = window.opener && window.opener !== window
 
@@ -148,7 +180,13 @@ const InternalAuthProvider = ({
 
   const signOut = useCallback(
     async (options?: { callbackUrl?: string; global?: boolean }) => {
+      // Only run on client side
+      if (typeof window === 'undefined') return
+
       const { callbackUrl, global = true } = options || {}
+
+      // Always remove the JWT token cookie on sign out
+      jwtCookieUtils.removeToken()
 
       if (global) {
         // Global sign out - logs out from entire Logto ecosystem
@@ -196,11 +234,13 @@ export const AuthProvider = ({ children, config, callbackUrl, customNavigate, en
   }, [customNavigate])
 
   return (
-    <LogtoProvider config={config}>
-      <InternalAuthProvider callbackUrl={callbackUrl} enablePopupSignIn={enablePopupSignIn}>
-        {children}
-      </InternalAuthProvider>
-    </LogtoProvider>
+    <ClientOnly>
+      <LogtoProvider config={config}>
+        <InternalAuthProvider callbackUrl={callbackUrl} enablePopupSignIn={enablePopupSignIn}>
+          {children}
+        </InternalAuthProvider>
+      </LogtoProvider>
+    </ClientOnly>
   )
 }
 

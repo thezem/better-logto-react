@@ -100,6 +100,143 @@ export const getInitials = (name?: string): string => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+/**
+ * Cookie management utilities
+ */
+export const cookieUtils = {
+  /**
+   * Set a cookie with the given name, value, and options
+   */
+  setCookie: (name: string, value: string, options: {
+    expires?: Date | number
+    maxAge?: number
+    domain?: string
+    path?: string
+    secure?: boolean
+    sameSite?: 'strict' | 'lax' | 'none'
+    httpOnly?: boolean
+  } = {}) => {
+    if (typeof document === 'undefined') return
+
+    const {
+      expires,
+      maxAge,
+      domain,
+      path = '/',
+      secure = window.location.protocol === 'https:',
+      sameSite = 'lax'
+    } = options
+
+    let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+
+    if (expires) {
+      const expireDate = typeof expires === 'number' ? new Date(Date.now() + expires * 24 * 60 * 60 * 1000) : expires
+      cookieString += `; expires=${expireDate.toUTCString()}`
+    }
+
+    if (maxAge !== undefined) {
+      cookieString += `; max-age=${maxAge}`
+    }
+
+    if (domain) {
+      cookieString += `; domain=${domain}`
+    }
+
+    if (path) {
+      cookieString += `; path=${path}`
+    }
+
+    if (secure) {
+      cookieString += `; secure`
+    }
+
+    if (sameSite) {
+      cookieString += `; samesite=${sameSite}`
+    }
+
+    document.cookie = cookieString
+  },
+
+  /**
+   * Get a cookie value by name
+   */
+  getCookie: (name: string): string | null => {
+    if (typeof document === 'undefined') return null
+
+    const nameEQ = encodeURIComponent(name) + '='
+    const cookies = document.cookie.split(';')
+
+    for (let cookie of cookies) {
+      cookie = cookie.trim()
+      if (cookie.indexOf(nameEQ) === 0) {
+        return decodeURIComponent(cookie.substring(nameEQ.length))
+      }
+    }
+
+    return null
+  },
+
+  /**
+   * Remove a cookie by name
+   */
+  removeCookie: (name: string, options: {
+    domain?: string
+    path?: string
+  } = {}) => {
+    if (typeof document === 'undefined') return
+
+    const { domain, path = '/' } = options
+
+    let cookieString = `${encodeURIComponent(name)}=; expires=Thu, 01 Jan 1970 00:00:01 GMT`
+
+    if (domain) {
+      cookieString += `; domain=${domain}`
+    }
+
+    if (path) {
+      cookieString += `; path=${path}`
+    }
+
+    document.cookie = cookieString
+  }
+}
+
+/**
+ * Specialized functions for JWT token management
+ */
+export const jwtCookieUtils = {
+  /**
+   * Save JWT token to cookie
+   */
+  saveToken: (token: string) => {
+    cookieUtils.setCookie('logto_authtoken', token, {
+      expires: 7, // 7 days
+      secure: true,
+      sameSite: 'strict',
+      path: '/'
+    })
+  },
+
+  /**
+   * Get JWT token from cookie
+   */
+  getToken: (): string | null => {
+    return cookieUtils.getCookie('logto_authtoken')
+  },
+
+  /**
+   * Remove JWT token from cookie
+   */
+  removeToken: () => {
+    cookieUtils.removeCookie('logto_authtoken', {
+      path: '/'
+    })
+  }
+}
+
+/**
+ * Utility function to combine class names (for components)
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
