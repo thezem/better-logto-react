@@ -30,7 +30,7 @@ A simpler way to use [@logto/react](https://github.com/logto-io/logto) with preb
 
 ---
 
-This library is inteded to be a plug-and-play solution for most common use cases, while still allowing you to customize the underlying Logto experience as needed. to save you the hassle of setting up authentication from scratch. and connecting frontend and backend authentication flows.
+This library is intended to be a plug-and-play solution for most common use cases, while still allowing you to customize the underlying Logto experience as needed. to save you the hassle of setting up authentication from scratch. and connecting frontend and backend authentication flows.
 
 But if you need more control over auth flows, you can always fall back to using the official @logto/react
 
