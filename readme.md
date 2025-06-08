@@ -11,10 +11,8 @@ A simpler way to use [@logto/react](https://github.com/logto-io/logto) with preb
 - **AuthProvider**: Easy context provider for Logto authentication
 - **UserCenter**: Prebuilt user dropdown/avatar for your navbar
 - **CallbackPage**: Handles OAuth callback and popup flows
-- **SignInPage**: Standalone sign-in page component
 - **useAuth**: React hook for accessing user and auth actions
 - **Custom navigation**: Integrates with React Router, Next.js, etc.
-- **Popup sign-in**: Support for popup-based authentication
 - **Guest mode**: Built-in guest user support with fingerprinting
 
 ### Backend Authentication
@@ -22,8 +20,6 @@ A simpler way to use [@logto/react](https://github.com/logto-io/logto) with preb
 - **JWT Verification**: Manual JWT verification with JWKS caching
 - **Express.js Middleware**: Ready-to-use Express middleware
 - **Next.js Support**: API routes and middleware helpers
-- **Scope-based Authorization**: Built-in scope validation
-- **Multiple Token Sources**: Supports cookies and Authorization headers
 - **TypeScript Support**: Full TypeScript definitions
 
 ### Bundler Configuration
@@ -34,6 +30,12 @@ A simpler way to use [@logto/react](https://github.com/logto-io/logto) with preb
 
 ---
 
+This library is inteded to be a plug-and-play solution for most common use cases, while still allowing you to customize the underlying Logto experience as needed. to save you the hassle of setting up authentication from scratch. and connecting frontend and backend authentication flows.
+
+But if you need more control over auth flows, you can always fall back to using the official @logto/react
+
+You can start with with @ouim/simple-logto for a quick setup,<br> And you won't find it hard to migrate to the official Logto SDK later if you need more advanced features.
+
 ## Installation
 
 ```sh
@@ -41,8 +43,6 @@ npm install @ouim/simple-logto
 ```
 
 ## Quick Start
-
-### Frontend Setup
 
 ### Frontend Setup
 
@@ -63,7 +63,6 @@ function App() {
     <AuthProvider
       config={config}
       callbackUrl="http://localhost:3000/callback"
-      enablePopupSignIn={true} // Enable popup-based sign-in
       // Optionally: customNavigate for SPA routing
       // customNavigate={(url, options) => { ... }}
     >
@@ -76,6 +75,8 @@ function App() {
 #### 2. UserCenter Component
 
 Drop the `UserCenter` component into your navbar for a ready-to-use user menu:
+
+![UserCenter](image.png)
 
 ```tsx
 import { UserCenter } from '@ouim/simple-logto'
@@ -104,6 +105,8 @@ Example adding custom pages:
 <UserCenter additionalPages={[{ link: '/settings', text: 'Go to your settings' }]} />
 ```
 
+![UserCenter logged in](image-1.png)
+
 ---
 
 #### 3. CallbackPage
@@ -118,23 +121,10 @@ export default function Callback() {
 }
 ```
 
-- Handles both normal and popup sign-in flows.
 - Optional props:
   - `onSuccess`, `onError`, `loadingComponent`, `successComponent`
 
-#### 4. SignInPage (Optional)
-
-For a standalone sign-in page:
-
-```tsx
-import { SignInPage } from '@ouim/simple-logto'
-
-export default function SignIn() {
-  return <SignInPage />
-}
-```
-
-#### 5. useAuth Hook
+#### 4. useAuth Hook
 
 Access the current user and authentication actions anywhere in your app:
 
@@ -226,9 +216,8 @@ import { createExpressAuthMiddleware } from '@ouim/simple-logto/backend'
 
 const authMiddleware = createExpressAuthMiddleware({
   logtoUrl: 'https://your-logto-domain.com',
-  audience: 'your-api-resource-identifier',
+  audience: 'your-api-resource-identifier', // A url you get when you register your API Resource in Logto, usually something like 'https://yourdomain.com/api'
   cookieName: 'logto_authtoken', // optional, defaults to 'logto_authtoken'
-  requiredScope: 'some_scope', // optional
   allowGuest: true, // optional, enables guest mode
 })
 
@@ -399,26 +388,6 @@ import { getBundlerConfig } from '@ouim/simple-logto'
 
 // Get configuration for specific bundler
 const config = getBundlerConfig('vite') // 'vite' | 'webpack' | 'nextjs'
-```
-
----
-
-## Utilities
-
-The library also exports several utility functions:
-
-```typescript
-import { cookieUtils, jwtCookieUtils } from '@ouim/simple-logto'
-
-// Cookie utilities
-cookieUtils.set('key', 'value')
-cookieUtils.get('key')
-cookieUtils.remove('key')
-
-// JWT-specific cookie utilities
-jwtCookieUtils.setToken('jwt-token')
-jwtCookieUtils.getToken()
-jwtCookieUtils.removeToken()
 ```
 
 ---
